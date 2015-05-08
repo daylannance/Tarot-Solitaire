@@ -196,7 +196,7 @@ public class CursorControl : Placeholder{
 	{
 		usingSystemCursor = true;
 		Screen.lockCursor = false;
-		Cursor.visible = false;	
+		Screen.showCursor = true;	
 		texture.enabled = false;
 		systemCursorSprite.SetActive(true);	
 	}
@@ -204,7 +204,7 @@ public class CursorControl : Placeholder{
 	{
 		usingSystemCursor = false;
 		Screen.lockCursor = true;
-		Cursor.visible = false;	
+		Screen.showCursor = false;
 		texture.enabled = true;
 		systemCursorSprite.SetActive(false);
 		transform.position = Game.game.currentCam.ScreenToViewportPoint(Input.mousePosition);
