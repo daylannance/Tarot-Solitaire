@@ -149,7 +149,7 @@ public class CardManager : MonoBehaviour {
 			
 		}
 		BuildDeck ();
-		PlaceholderManager.manager.MakeMajorsPlaceholders(MakeArcanaCards());
+		//PlaceholderManager.manager.MakeMajorsPlaceholders(MakeArcanaCards());
 		
 	}
 	public void BuildDeck()
