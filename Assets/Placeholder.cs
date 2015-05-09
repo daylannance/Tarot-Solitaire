@@ -147,6 +147,10 @@ public class Placeholder : CustomMouse {
 	{
 		return false;
 	}
+	//Problem: Zodiac is being checked to see if a card should be added
+	//and then also to see if the sequence has changed, and possibly a 
+	//third time to see if coins need to be added or taken away.
+	//There has to be a simpler way to apply rules.
 	public virtual void AddCards(List<Card> list)
 	{			
 		UndoManager.manager.haveAnyCardsMoved = true;

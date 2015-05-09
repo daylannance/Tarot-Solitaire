@@ -66,7 +66,8 @@ public class Cascade : Placeholder {
 		
 		if(newCard.rank == card.rank + targetRankDiff)  result = true;
 		if(!card.isFacingUp) result = true;
-		if(newCard.zodiac == card.zodiac + targetZodiacDiff) 
+		//temporarily commented out to test coin mechanisms
+		if(true)//newCard.zodiac == card.zodiac + targetZodiacDiff) 
 		{
 			result = true;
 			card.isInZodiacSequence = true;
@@ -134,8 +135,10 @@ public class Cascade : Placeholder {
 		{
 			if(card.Previous() != null && card.Previous().isFacingUp)
 			{
-				if(card.zodiac == card.Previous().zodiac + targetDiff)
+				//I did this elsewhere too (this code should only happen once), just testing the coin mechanism
+				if(true)//card.zodiac == card.Previous().zodiac + targetDiff)
 				{
+					//adding coin mounter as needed:
 					if(!card.Previous().mounter) card.Previous ().mounter = coinManager.GetCoinMounter(card.Previous());
 					card.Previous().isInZodiacSequence = true;
 					card.Previous ().mounter.targetCount = consecutiveCount;
