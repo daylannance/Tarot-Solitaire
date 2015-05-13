@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 public class ZodiacSigns : MonoBehaviour {
 	List<ScaleWithScreen> signs = new List<ScaleWithScreen>();
-	Dictionary<string,ScaleWithScreen> symbols = new Dictionary<string, ScaleWithScreen>();
 	// Use this for initialization
 	void Start () {
 		List<string> signNames = new List<string>()

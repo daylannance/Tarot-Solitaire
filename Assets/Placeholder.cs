@@ -164,10 +164,10 @@ public class Placeholder : CustomMouse {
 			Parent (card);
 			SetCardTransformPosition(card);
 		}
-		CheckZodiacSequences();
+		//CheckZodiacSequences();
 		if(previousParent != null)
 		{
-			previousParent.CheckZodiacSequences();
+			//previousParent.CheckZodiacSequences();
 		}
 		switch(Game.game.state)
 		{
@@ -246,7 +246,7 @@ public class Placeholder : CustomMouse {
 		foreach(var card in copyList)
 		{
 			if((card.targetPosition - card.transform.parent.localPosition).magnitude < .01f) continue;
-			card.StartCoroutine(card.AnimateMove (card.targetPosition, .1f));
+			yield return card.StartCoroutine(card.AnimateMove (card.targetPosition, .1f));
 			yield return new WaitForSeconds(.1f);
 		}
 		StartCoroutine ("AnimateAddCoins");
@@ -273,10 +273,6 @@ public class Placeholder : CustomMouse {
 	override public void Clicked(MouseEvent evt)
 	{
 		base.Clicked (evt);
-		if(evt.button == MouseButton.Left)
-		{
-			Game.game.PlaceholderClicked(this);
-		}
 	}
 	public virtual bool ReverseCards(Card card, out List<Card> reversedCards)
 	{

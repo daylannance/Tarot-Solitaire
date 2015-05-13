@@ -1,5 +1,6 @@
 using UnityEngine;
-
+namespace CustomHelpers
+{
 public class Sinwave
 {
 	public float hZ;
@@ -16,4 +17,5 @@ public class Sinwave
 		t += Time.deltaTime * hZ * 2 * Mathf.PI;
 		return Mathf.Cos(t) * amplitude + 1.5f;
 	}
+}
 }

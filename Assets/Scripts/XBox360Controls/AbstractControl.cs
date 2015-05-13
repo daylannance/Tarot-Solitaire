@@ -10,7 +10,7 @@ namespace XBoxController
 		protected bool justReleased;
 		protected float changeSinceLastFrame = 0;
 		protected string binding;
-		public bool isDown {get; protected set;}
+		public virtual bool isDown {get; protected set;}
 		public float currentValue { get; protected set;}
 		public XBoxControlsEnum controlsEnum { get; protected set;}
 		public Polarity polarity;

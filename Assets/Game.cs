@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
@@ -71,79 +72,7 @@ public class Game : MonoBehaviour {
 		CursorControl.cursor.MouseClicked += OnClick;
 		CursorControl.cursor.enabled = false; //lock cursor so there are no collection modification errors during startup.
 	}
-	public void OnLeftClick(Card card)
-	{
-
-	}
-	public void OnMiddleClick(Card card)
-	{
-
-	}
-	public void OnRightClick(Card card)
-	{
-
-	}
-	// Update is called once per frame
-	void Update () {
-		
-	}
-	public void CardClicked(Card card)
-	{
-		switch(state)
-		{
-			case GameState.Paused:
-				break;
-			case GameState.HandEmpty:
-				if(card.isFacingUp)
-				{
-					cardInHand = card;
-				}
-				else if(card = card.parentPlaceholder.cards[card.parentPlaceholder.cards.Count-1])
-				{
-					card.FlipUp();
-				}
-				break;
-			case GameState.CardInHand:
-				if(card.parentPlaceholder != cardInHand.parentPlaceholder)
-				{					
-					CardClickedWithCardInHand(card, cardInHand);
-				}	
-				else if(cardInHand == null)
-				{
-					state = GameState.HandEmpty;
-				}
-				else {
-					cardInHand = card;	
-				}
-				break;
-			case GameState.SpecialCardInHand:
-				break;
-		}
-	}
-	public void ZoomToCloseup(Vector3 worldPos)
-	{
-		if(CardManager.currentHighlighted != null)
-		{
-			float height = CardManager.currentHighlighted.GetComponent<Renderer>().bounds.size.y;
-			CameraManager.manager.ZoomToFit (4, worldPos);
-		}
-	}
-	public void MiddleClicked(Vector3 worldPos)
-	{
-		switch(Game.game.state)
-		{
-			case GameState.HandEmpty:
-				ZoomToCloseup(worldPos);
-			break;
-			case GameState.CardInHand:
-				ZoomToCloseup(worldPos);
-				//ShowMajors ();
-				break;
-			case GameState.SelectingSpecialCard:
-				HideMajors ();		
-				break;
-		}
-	}
+	
 	public void ShowMajors()
 	{
 		Game.game.cardInHand = null;
@@ -157,34 +86,7 @@ public class Game : MonoBehaviour {
 		Game.game.state =GameState.HandEmpty;
 		table.SetActive(true);
 	}
-	public void PutCardBack()
-	{
-		if(cardInHand != null)
-		{
-			cardInHand = null;
-		}
-	}
-	void CardClickedWithCardInHand(Card clickedCard, Card card)
-	{
-		clickedCard.parentPlaceholder.CardClickedWithCardInHand(clickedCard, card);
-	}
-	public void PlaceholderClicked(Placeholder p){}
-	public void PlaceholderClicked(Cascade c)
-	{
-		switch(state)
-		{
-			case GameState.HandEmpty:
-				break;
-			case GameState.CardInHand:
-				if(c.cards.Count == 0)
-				{
-					c.AddCards(cardInHand.parentPlaceholder.RemoveCardAndChildren(cardInHand));
-					cardInHand = null;
-				}		
-				break;
-		}
-
-	}
+	
 	public void ShowCardViewer(Card card)
 	{
 		table.SetActive(false);
@@ -237,10 +139,6 @@ public class Game : MonoBehaviour {
 		}
 		
 	}
-	public void PlaceholderClicked(Deck d){}
-	public void PlaceholderClicked(AcePile a){}
-	public void PlaceholderClicked(Hand d){}
-	
 	public void OnCardsReady(Deck cards)
 	{	
 		deck = cards;

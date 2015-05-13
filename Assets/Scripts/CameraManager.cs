@@ -16,7 +16,7 @@ public class CameraManager:MonoBehaviour
 	Vector3 defaultPosition;
 	public float springConstant;
 	int middleFitHeight = 10;
-	int closeupFitHeight = 4;
+	int closeupFitHeight = 5;
 	
 
 	// Use this for initialization
@@ -148,10 +148,10 @@ public class CameraManager:MonoBehaviour
 				Move = Spring;	
 				break;
 			case View.Middle:
-				ZoomToFit(10,evt.hit.point);
+				ZoomToFit(middleFitHeight,evt.hit.point);
 				break;
 			case View.Closeup:
-				ZoomToFit(5,evt.hit.point);
+				ZoomToFit(closeupFitHeight,evt.hit.point);
 				break;		
 			}
 		}

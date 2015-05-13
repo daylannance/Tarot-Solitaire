@@ -30,7 +30,7 @@ public class CursorControl : Placeholder{
 	public event MouseClickEventHandler MouseClicked;
 	public float thumbstickSpeed;
 	
-	void Awake()
+	override public void Awake()
 	{
 		cursor = this;
 	}
@@ -60,7 +60,6 @@ public class CursorControl : Placeholder{
 		movement += new Vector3(Input.GetAxis ("Mouse X"), Input.GetAxis ("Mouse Y"), 0) * mouseSpeed;
 		if(MouseMoved != null) MouseMoved(movement);
 		Vector3 newPos = transform.position+movement;
-		Vector3 camMovement;
 		Vector2 overstep = Vector2.zero;
 		switch(Game.game.state)
 		{
@@ -151,33 +150,7 @@ public class CursorControl : Placeholder{
 		var x2 = hit.point.x;
 		return Mathf.Abs(x2 - x1) * 20;
 	}
-	void LeftClicked()
-	{
-		CustomMouse target = null;
-		switch(Game.game.state)
-		{
-			case GameState.CardInHand:
-				target = GetTargetUnderCursor(cardMask);
-				
-				break;
-			case GameState.HandEmpty:
-				target = GetTargetUnderCursor(cardMask);
-			
-				break;
-			case GameState.SelectingSpecialCard:
-				target = GetTargetUnderCursor(specialCardMask);
-				//if(target != null) target.Clicked();
-				break;
-			case GameState.SpecialCardInHand:
-				target = GetTargetUnderCursor(cardMask);
-				//if(target != null) target.Clicked();
-				break;		
-			case GameState.SelectingARow:
-				target = GetTargetUnderCursor(cardMask);
-				//if(target != null) target.Clicked();
-				break;				
-		}
-	}
+	
 	
 	
 	public void ToggleUsingSystemCursor()
@@ -195,7 +168,7 @@ public class CursorControl : Placeholder{
 	public void UseSystemCursor()
 	{
 		usingSystemCursor = true;
-		Screen.lockCursor = false;
+		Cursor.lockState = CursorLockMode.None;
 		Cursor.visible = false;	
 		texture.enabled = false;
 		systemCursorSprite.SetActive(true);	
@@ -203,7 +176,7 @@ public class CursorControl : Placeholder{
 	public void UseCustomCursor()
 	{
 		usingSystemCursor = false;
-		Screen.lockCursor = true;
+		Cursor.lockState = CursorLockMode.None;
 		Cursor.visible = false;	
 		texture.enabled = true;
 		systemCursorSprite.SetActive(false);
@@ -327,9 +300,4 @@ public class CursorControl : Placeholder{
 		}
 		return obj? true:false;
 	}
-	public void ToggleLockCursor()
-	{
-		Screen.lockCursor = !Screen.lockCursor;
-	}
-	
 }

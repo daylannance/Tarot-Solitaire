@@ -15,7 +15,6 @@ public struct MaterialInfo
 public class Card : CustomMouse {
 	AudioSource audioSource;
 	public float width, height, depth;
-	public Transform coinTransform;
 	public Rank rank;
 	public Suit suit;
 	public Rank substituteRank = Rank.NotSpecified;
@@ -31,14 +30,10 @@ public class Card : CustomMouse {
 	public Color edgeColor;
 	int flipUp, flipDown;
 	public bool wasUsed = false;
-	public Sinwave glowWave;
+	public CustomHelpers.Sinwave glowWave;
 	public CardStatus status = CardStatus.NotUpsideDown;
-	public CoinMounter mounter;
-	public Transform coinMounterTransform;
-	public float GetCoinMountZ()
-	{
-		return targetPosition.z + coinMounterTransform.position.z -transform.position.z;
-	}
+	public CoinStash coinStash;
+	
 	override public bool isHighlighted
 	{ 
 		
@@ -112,7 +107,7 @@ public class Card : CustomMouse {
 		width = gameObject.GetComponent<Renderer>().bounds.size.x;
 		height = gameObject.GetComponent<Renderer>().bounds.size.y;
 		depth = gameObject.GetComponent<Renderer>().bounds.size.z;
-		glowWave = new Sinwave(1.5f,1f);
+		glowWave = new CustomHelpers.Sinwave(1.5f,1f);
 		if(materialColors == null)
 		{
 			DefineInitialColors();
@@ -145,7 +140,7 @@ public class Card : CustomMouse {
 	public void FlipUp()
 	{
 		UndoManager.manager.haveAnyCardsMoved = true;
-		audioSource.Play ();
+		//audioSource.Play ();
 		anim.SetTrigger(flipUp);
 		isFacingUp = true;
 	}

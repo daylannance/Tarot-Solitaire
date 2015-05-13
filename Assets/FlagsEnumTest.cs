@@ -13,7 +13,6 @@ public class FlagsEnumTest : MonoBehaviour {
 		E = 16
 	}
 	FlagsEnum flags = FlagsEnum.A;
-	int index = 0;
 	// Use this for initialization
 	void Start () {
 	

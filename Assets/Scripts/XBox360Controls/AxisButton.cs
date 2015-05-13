@@ -5,7 +5,6 @@ namespace XBoxController
 	public class AxisButton:AbstractControl, IControl
 	{
 		bool _isDown;
-		float currentValue;
 
 		public AxisButton(XBoxControlsEnum typeEnum, string binding, Polarity polarity = Polarity.NA)
 		:base(typeEnum,binding,polarity)
@@ -13,10 +12,10 @@ namespace XBoxController
 			this.polarity = polarity;
 		}
 		
-		public bool isDown 
+		override public bool isDown 
 		{
 			get{ return _isDown;}
-			private set{ _isDown = value;}
+			protected set{ _isDown = value;}
 		}
 		void IControl.Update()
 		{
@@ -80,7 +79,6 @@ namespace XBoxController
 		}
 		float IControl.GetValue(bool withPolarity = false)
 		{
-			float result = 0;
 			if(withPolarity)
 			{
 				return currentValue;

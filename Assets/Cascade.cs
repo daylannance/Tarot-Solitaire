@@ -7,7 +7,6 @@ public class Cascade : Placeholder {
 	public State state = State.NotFrozen;
 	public bool reverseOrder;
 	ArrowIndicators arrows;
-	public CoinManager coinManager;
 	// Use this for initialization
 	override public void Start () {
 		base.Start ();
@@ -18,10 +17,7 @@ public class Cascade : Placeholder {
 	override public void Update () {
 		base.Update();
 	}
-	public CoinMounter GetCoinMounter(Card card)
-	{
-		return coinManager.GetCoinMounter(card);
-	}
+	
 	public void ReverseArrows()
 	{
 		arrows.ReverseArrows();
@@ -79,7 +75,18 @@ public class Cascade : Placeholder {
 	
 	override public void Clicked(MouseEvent evt)
 	{
-		if(evt.button == MouseButton.Left)Game.game.PlaceholderClicked(this);
+		if(evt.button == MouseButton.Left)
+		{
+			switch(Game.game.state)
+			{
+				case GameState.CardInHand:
+					if(cards.Count == 0)
+					{
+						AddCards(Game.game.cardInHand.parentPlaceholder.RemoveCardAndChildren(Game.game.cardInHand));
+					}
+					break;
+			}
+		}
 	}
 	override public void OnCardClicked(Card card)
 	{
@@ -138,14 +145,11 @@ public class Cascade : Placeholder {
 				//I did this elsewhere too (this code should only happen once), just testing the coin mechanism
 				if(true)//card.zodiac == card.Previous().zodiac + targetDiff)
 				{
-					//adding coin mounter as needed:
-					if(!card.Previous().mounter) card.Previous ().mounter = coinManager.GetCoinMounter(card.Previous());
 					card.Previous().isInZodiacSequence = true;
-					card.Previous ().mounter.targetCount = consecutiveCount;
+					card.Previous ().coinStash.targetCount = consecutiveCount;
 					consecutiveCount++;
 					card.isInZodiacSequence = true;
-					if(!card.mounter) card.mounter = coinManager.GetCoinMounter(card);
-					card.mounter.targetCount = consecutiveCount;
+					card.coinStash.targetCount = consecutiveCount;
 					
 				}
 				else
@@ -159,10 +163,10 @@ public class Cascade : Placeholder {
 				//card.isInZodiacSequence = false;
 			}
 		}
-		UpdateCoins ();
 	}
 	override protected void UpdateCoins()
 	{
+		CheckZodiacSequences();
 		StartCoroutine ("AnimateAddCoins");
 	}
 	override protected IEnumerator AnimateAddCoins()
@@ -170,17 +174,15 @@ public class Cascade : Placeholder {
 		int quantityToAdd = 0;
 		foreach(var card in cards)
 		{
-			if(card.mounter == null) continue;
-			quantityToAdd += card.mounter.targetCount - card.mounter.coins.Count;
+			quantityToAdd += card.coinStash.targetCount - card.coinStash.coins.Count;
 		}
 		float delay = 1f/quantityToAdd;
 		//modified while iterating error when I used a foreach
 		for(int i=0; i<cards.Count; i++)
 		{
-			if(!cards[i].mounter) continue;
-			while(cards[i].mounter.targetCount > cards[i].mounter.coins.Count)
+			while(cards[i].coinStash.targetCount > cards[i].coinStash.coins.Count)
 			{
-				cards[i].mounter.AddCoin();
+				cards[i].coinStash.AddCoin();
 				yield return new WaitForSeconds(delay);	
 			}
 		}
