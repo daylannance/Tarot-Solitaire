@@ -18,6 +18,10 @@ public class Placeholder : CustomMouse {
 	public Vector3 offset;
 	public int id;
 	public static int idCounter;
+	protected List<Card> tempQueue = new List<Card>(); //for passing cards between coroutines
+	protected Queue<string> animations = new Queue<string>();
+	protected bool isAnimating = false;
+
 	
 	override public bool isHighlighted
 	{
@@ -48,6 +52,14 @@ public class Placeholder : CustomMouse {
 	{
 		sprite.color = offColor;
 		GetComponent<Renderer>().sortingLayerID = LayerMask.GetMask (new string[]{"Cards", "CardsInHand"});
+	}
+	public virtual void FixedUpdate()
+	{
+		if(!isAnimating && animations.Count > 0)
+		{
+			var routineName = animations.Dequeue();
+			StartCoroutine (routineName);
+		}
 	}
 	override public void UnHighlight()
 	{
@@ -175,25 +187,27 @@ public class Placeholder : CustomMouse {
 				break;
 		}
 		AnimateMoveCards ();
-		
+		animations.Enqueue("AnimateAddCoins");
 	}
 	public void AnimateMoveCards()
 	{
-		List<Card> copyList = new List<Card>();
+		tempQueue.Clear();
 		foreach(var card in cards)
 		{
-			copyList.Add (card);
+			//queue the cards for the animations
+			tempQueue.Add (card);
 		}
 		switch(Game.game.state)
 		{
 		case GameState.Dealing:
-			foreach(var card in copyList)
+			foreach(var card in tempQueue)
 			{
 				card.transform.parent.localPosition = card.targetPosition;
 			}
 			break;
 		default:
-			StartCoroutine(AnimateMoveCardsCoroutine());
+			animations.Enqueue("AnimateCardsUpAndOver");
+			animations.Enqueue("AnimateCardsDown");
 			break;
 		}	
 	}
@@ -223,16 +237,12 @@ public class Placeholder : CustomMouse {
 		}
 		card.transform.parent.rotation = Quaternion.AngleAxis (cardAngle, new Vector3(1,0,0));
 	}
-	public IEnumerator AnimateMoveCardsCoroutine()
+	IEnumerator AnimateCardsUpAndOver()
 	{
-		List<Card> copyList = new List<Card>();
-		foreach(var card in cards)
-		{
-			copyList.Add (card);
-		}
+		isAnimating = true;
 		float animateHeight =(cards.Count > 0)? cards[0].width * 2: 1f;
-		copyList.Reverse ();
-		foreach(var card in copyList)
+		tempQueue.Reverse ();
+		foreach(var card in tempQueue)
 		{
 			if((card.targetPosition - card.transform.parent.localPosition).magnitude < .01f) continue;
 			var pos = card.targetPosition;
@@ -242,14 +252,19 @@ public class Placeholder : CustomMouse {
 			yield return new WaitForSeconds(.1f);
 		}
 		yield return new WaitForSeconds(.3f);
-		copyList.Reverse ();
-		foreach(var card in copyList)
+		isAnimating = false;
+	}
+	IEnumerator AnimateCardsDown()
+	{
+		isAnimating = true;
+		tempQueue.Reverse ();
+		foreach(var card in tempQueue)
 		{
 			if((card.targetPosition - card.transform.parent.localPosition).magnitude < .01f) continue;
 			yield return card.StartCoroutine(card.AnimateMove (card.targetPosition, .1f));
 			yield return new WaitForSeconds(.1f);
 		}
-		StartCoroutine ("AnimateAddCoins");
+		isAnimating = false;
 	}
 	public virtual void RepositionCards()
 	{

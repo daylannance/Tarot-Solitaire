@@ -167,10 +167,12 @@ public class Cascade : Placeholder {
 	override protected void UpdateCoins()
 	{
 		CheckZodiacSequences();
-		StartCoroutine ("AnimateAddCoins");
+		animations.Enqueue("AnimateAddCoins");
 	}
 	override protected IEnumerator AnimateAddCoins()
 	{
+		CheckZodiacSequences();
+		isAnimating = true;
 		int quantityToAdd = 0;
 		foreach(var card in cards)
 		{
@@ -186,6 +188,7 @@ public class Cascade : Placeholder {
 				yield return new WaitForSeconds(delay);	
 			}
 		}
+		isAnimating = false;
 		yield return null;
 	}
 	public bool ReverseCards(Card card, bool reverseRules = false, List<Card> reversedCards = null)

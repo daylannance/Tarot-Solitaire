@@ -237,7 +237,7 @@ public class CursorControl : Placeholder{
 	{
 		return new Vector2(transform.position.x * Screen.width, transform.position.y * Screen.height);
 	}
-	void FixedUpdate()
+	override public void FixedUpdate()
 	{
 		GameObject obj;
 		if(usingSystemCursor) return;	
