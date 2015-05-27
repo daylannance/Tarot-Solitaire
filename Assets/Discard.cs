@@ -21,7 +21,7 @@ public class Discard:Placeholder
 		foreach(var card in cards)
 		{
 			card.enabled = true;
-			card.GetComponent<Renderer>().enabled = true;
+			card.renderer.enabled = true;
 			list.Add (card);
 		}
 		cards.Clear();
@@ -34,6 +34,11 @@ public class Discard:Placeholder
 	override public void Clicked(MouseEvent evt)
 	{
 	
+	}
+	override public void AddCards(List<Card> list)
+	{
+		base.AddCards(list);
+		AnimateMoveCards ();
 	}
 }
 

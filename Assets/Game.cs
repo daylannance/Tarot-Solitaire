@@ -20,6 +20,7 @@ public class Game : MonoBehaviour {
 	
 	[HideInInspector]
 	public Camera currentCam;
+	public bool bypassRules = false;
 	public GameObject table;
 	public Camera mainCam;
 	public static Game game;

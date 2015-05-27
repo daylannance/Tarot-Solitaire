@@ -25,6 +25,7 @@ public class Card : CustomMouse {
 	public Zodiac zodiac;
 	public Animator anim;
 	public Placeholder parentPlaceholder;
+	public Placeholder previousParentPlaceholder = null;
 	public Vector3 targetPosition;
 	public Color pictureColor, UpperLeftColor, UpperRightColor;
 	public Color edgeColor;
@@ -33,6 +34,12 @@ public class Card : CustomMouse {
 	public CustomHelpers.Sinwave glowWave;
 	public CardStatus status = CardStatus.NotUpsideDown;
 	public CoinStash coinStash;
+	public bool isBeingTransfered = false;
+	public bool isAnimating = false;
+	public Renderer renderer;
+	[HideInInspector]
+	protected ClickDetector clickDetector;
+	
 	
 	override public bool isHighlighted
 	{ 
@@ -44,7 +51,7 @@ public class Card : CustomMouse {
 			{
 				if(isFacingUp)
 				{
-					CardManager.cardManager.DisplayCardInfo(ToString(), GetComponent<Renderer>().materials[CardManager.cardManager.materialIDs["Picture"]].mainTexture);
+					CardManager.cardManager.DisplayCardInfo(ToString(), renderer.materials[CardManager.cardManager.materialIDs["Picture"]].mainTexture);
 				}
 				else 
 				{
@@ -59,6 +66,8 @@ public class Card : CustomMouse {
 		GetComponent<Renderer>().materials[materialColors["Picture"].index].color = color * 1.5f;
 		isHighlighted = true;
 	}
+	[HideInInspector]
+	public Destinations destinations;
 	public bool isGlowing = false;
 	public bool isFacingUp = false;
 	public static int idCount = 0;
@@ -83,11 +92,11 @@ public class Card : CustomMouse {
 	{
 		if(on)
 		{
-			GetComponent<Renderer>().materials[materialColors["UpperRight"].index].color = Color.magenta * 1.5f;
+			renderer.materials[materialColors["UpperRight"].index].color = Color.magenta * 1.5f;
 		}
 		else
 		{
-			GetComponent<Renderer>().materials[materialColors["UpperRight"].index].color = Color.red * 1.5f;//materialColors["UpperRight"].normalColor * 1.5f;
+			renderer.materials[materialColors["UpperRight"].index].color = Color.red * 1.5f;//materialColors["UpperRight"].normalColor * 1.5f;
 		}
 	}
 	override public void RecordUndo()
@@ -100,35 +109,37 @@ public class Card : CustomMouse {
 	public static Dictionary<string,MaterialInfo> materialColors;
 	public virtual void Awake()
 	{
+		renderer=transform.GetComponentInChildren<Renderer>();
 		audioSource = GetComponent<AudioSource>();
 		id=idCount++;
 		flipUp = Animator.StringToHash("FlipFaceUpTrigger");
 		flipDown = Animator.StringToHash ("FlipFaceDownTrigger");
-		width = gameObject.GetComponent<Renderer>().bounds.size.x;
-		height = gameObject.GetComponent<Renderer>().bounds.size.y;
-		depth = gameObject.GetComponent<Renderer>().bounds.size.z;
+		width = GetComponentInChildren<Renderer>().bounds.size.x;
+		height = GetComponentInChildren<Renderer>().bounds.size.y;
+		depth = GetComponentInChildren<Renderer>().bounds.size.z;
 		glowWave = new CustomHelpers.Sinwave(1.5f,1f);
 		if(materialColors == null)
 		{
 			DefineInitialColors();
 		}
 		isInZodiacSequence = false;
+		destinations = new Destinations(transform);
 	}
 	// Use this for initialization
 	public virtual void Start () {
-		
-		
+		clickDetector = GetComponentInChildren<ClickDetector>();
+		clickDetector.mouseClick += Clicked;
 	}
 	void DefineInitialColors()
 	{
 		materialColors = new Dictionary<string,MaterialInfo>{
-			{ "CenterOfCardBack"	, new MaterialInfo{ index = 6, normalColor = GetComponent<Renderer>().materials[6].color}},
-			{ "CardBackMain"		, new MaterialInfo{ index = 5, normalColor = GetComponent<Renderer>().materials[5].color}},
-			{ "Picture" 			, new MaterialInfo{ index = 2, normalColor = GetComponent<Renderer>().materials[2].color}},
-			{ "Edges"				, new MaterialInfo{ index = 1, normalColor = GetComponent<Renderer>().materials[1].color}},
-			{ "PictureBorder"		, new MaterialInfo{ index = 2, normalColor = GetComponent<Renderer>().materials[2].color}},
-			{ "UpperLeft"			, new MaterialInfo{ index = 6, normalColor = GetComponent<Renderer>().materials[6].color}},
-			{ "CardBackBorder"		, new MaterialInfo{ index = 7, normalColor = GetComponent<Renderer>().materials[6].color}},
+			{ "CenterOfCardBack"	, new MaterialInfo{ index = 6, normalColor = renderer.materials[6].color}},
+			{ "CardBackMain"		, new MaterialInfo{ index = 5, normalColor = renderer.materials[5].color}},
+			{ "Picture" 			, new MaterialInfo{ index = 2, normalColor = renderer.materials[2].color}},
+			{ "Edges"				, new MaterialInfo{ index = 1, normalColor = renderer.materials[1].color}},
+			{ "PictureBorder"		, new MaterialInfo{ index = 2, normalColor = renderer.materials[2].color}},
+			{ "UpperLeft"			, new MaterialInfo{ index = 6, normalColor = renderer.materials[6].color}},
+			{ "CardBackBorder"		, new MaterialInfo{ index = 7, normalColor = renderer.materials[6].color}},
 			{ "UpperRight"			, new MaterialInfo{ index = 3, normalColor = UpperRightColor * 1.5f}}};
 	}
 	public void FlipDown()
@@ -174,6 +185,7 @@ public class Card : CustomMouse {
 	override public void Clicked(MouseEvent evt)
 	{
 		base.Clicked(evt);
+		if(isAnimating) return;
 		if(evt.button == MouseButton.Left)
 		{
 			parentPlaceholder.OnCardClicked(this);
@@ -204,12 +216,13 @@ public class Card : CustomMouse {
 			Color color = glowColor;	
 			color *= glowWave.NextValue ();
 			//renderer.materials[CardManager.cardManager.materialIDs["Edges"]].color = color;
-			GetComponent<Renderer>().materials[materialColors["UpperLeft"].index].color = color;
+			renderer.materials[materialColors["UpperLeft"].index].color = color;
 		}
 		else {
 			Color color = materialColors["UpperLeft"].normalColor;
-			GetComponent<Renderer>().materials[materialColors["UpperLeft"].index].color = color;	
-		}	
+			renderer.materials[materialColors["UpperLeft"].index].color = color;	
+		}
+		destinations.Update();
 	}
 	override public void UnHighlight()
 	{
@@ -238,15 +251,17 @@ public class Card : CustomMouse {
 	}
 	public IEnumerator AnimateMove(Vector3 targetPosition, float seconds)
 	{
-		Vector3 diff = targetPosition - transform.parent.localPosition;
+		isAnimating = true;
+		Vector3 diff = targetPosition - transform.position;
 		Vector3 step = diff * (Time.deltaTime/seconds); 
 		float numberOfSteps = diff.magnitude/step.magnitude;
 		for(int i = 0; i < numberOfSteps; i++)
 		{
-			transform.parent.localPosition += step;
+			transform.position += step;
 			yield return null;
 		}
-		transform.parent.localPosition = targetPosition;
+		transform.position = targetPosition;
+		isAnimating = false;
 		yield return null;
 	}
 	public void RemoveSelfFromParent()

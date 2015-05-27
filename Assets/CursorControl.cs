@@ -125,6 +125,9 @@ public class CursorControl : Placeholder{
 											GetRaycastHitUnderCursor(),
 											button);
 			MouseClicked(evt);
+			//target could be anything on screen like a card or
+			//placeholder. If the thing doesn't extend custom mouse
+			//though, it will be ignored by the raytrace.
 			var target = GetTargetUnderCursor(currentDefaultMask);
 			if(target)target.Clicked (evt);
 		}

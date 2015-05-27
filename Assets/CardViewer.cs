@@ -45,7 +45,7 @@ public class CardViewer : MonoBehaviour {
 	}
 	public void SetCurrentCard(Card card)
 	{
-		GameObject obj = Instantiate (card.transform.parent.gameObject) as GameObject;
+		GameObject obj = Instantiate (card.gameObject) as GameObject;
 		Card newCard = obj.GetComponentInChildren<Card>();
 		currentCard = newCard;
 		newCard.FlipUp();

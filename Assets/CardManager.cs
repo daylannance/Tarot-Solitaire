@@ -57,9 +57,9 @@ public class CardManager : MonoBehaviour {
 			
 			
 			card.FlipUp();
-			card.gameObject.GetComponent<Renderer>().materials[materialIDs["Picture"]].mainTexture = Resources.Load<Texture2D>(path);
-			card.gameObject.GetComponent<Renderer>().materials[materialIDs["UpperLeft"]].mainTexture = Resources.Load<Texture2D>(path);
-			card.gameObject.GetComponent<Renderer>().materials[materialIDs["UpperRight"]].mainTexture = Resources.Load<Texture2D>(path);	
+			card.renderer.materials[materialIDs["Picture"]].mainTexture = Resources.Load<Texture2D>(path);
+			card.renderer.materials[materialIDs["UpperLeft"]].mainTexture = Resources.Load<Texture2D>(path);
+			card.renderer.materials[materialIDs["UpperRight"]].mainTexture = Resources.Load<Texture2D>(path);	
 		}
 		//PlaceholderManager.manager.majorsDeck.AddCards (mCards);
 		return mCards;
@@ -127,9 +127,9 @@ public class CardManager : MonoBehaviour {
 					break;
 				}
 				
-				card.gameObject.GetComponent<Renderer>().materials[materialIDs["Picture"]].mainTexture = Resources.Load<Texture2D>(path);
+				card.renderer.materials[materialIDs["Picture"]].mainTexture = Resources.Load<Texture2D>(path);
 				path = "Numbers/" + (i+1);
-				card.gameObject.GetComponent<Renderer>().materials[materialIDs["UpperLeft"]].mainTexture = Resources.Load<Texture2D>(path);
+				card.renderer.materials[materialIDs["UpperLeft"]].mainTexture = Resources.Load<Texture2D>(path);
 				string str = suit.ToString () + (i+1);
 				Debug.Log (str);
 				var zodiac = zodiacReference[str];
@@ -139,9 +139,9 @@ public class CardManager : MonoBehaviour {
 				if(zodiac != Zodiac.None)
 				{
 					var zodiacPath = "Zodiac/" + zodiac.ToString ();
-					card.gameObject.GetComponent<Renderer>().materials[materialIDs["UpperRight"]].mainTexture = Resources.Load<Texture2D>(zodiacPath);
-					card.gameObject.GetComponent<Renderer>().materials[materialIDs["UpperRight"]].SetTexture("_BumpMap", Resources.Load<Texture2D>(zodiacPath));
-					card.gameObject.GetComponent<Renderer>().materials[materialIDs["UpperRight"]].SetTexture("_ParallaxMap", Resources.Load<Texture2D>(zodiacPath));	
+					card.renderer.materials[materialIDs["UpperRight"]].mainTexture = Resources.Load<Texture2D>(zodiacPath);
+					card.renderer.materials[materialIDs["UpperRight"]].SetTexture("_BumpMap", Resources.Load<Texture2D>(zodiacPath));
+					card.renderer.materials[materialIDs["UpperRight"]].SetTexture("_ParallaxMap", Resources.Load<Texture2D>(zodiacPath));	
 					
 				}
 				

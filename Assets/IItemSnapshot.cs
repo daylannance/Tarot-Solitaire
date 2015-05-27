@@ -60,7 +60,7 @@ namespace Persistence
 			if(card.parentPlaceholder is Discard)
 			{
 				card.enabled = true;
-				card.GetComponent<Renderer>().enabled = true;
+				card.renderer.enabled = true;
 			}
 			return this;
 		}

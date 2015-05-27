@@ -16,22 +16,21 @@ public class AcePile : Placeholder {
 	override public void Update () {
 		base.Update ();
 	}
-	override public bool ApplyRules(Card card, Card newCard)
+	override public bool ApplyRules(List<Card> faceUpCards, List<Card> newCards)
 	{
 		bool result = false;
-		//ghetto way to see if there is only one card
-		if(newCard.parentPlaceholder.cards.Count -1 == newCard.parentPlaceholder.cards.IndexOf(newCard))
+		if(newCards.Count == 1)
 		{
-			if(newCard.suit == suit)
+			if(newCards[0].suit == suit)
 			{
 				if(cards.Count == 0) 
 				{
-					if(newCard.rank == Rank.Ace)
+					if(newCards[0].rank == Rank.Ace)
 					{
 						result = true;
 					}	
 				}
-				else if(newCard.rank == cards[cards.Count -1].rank + 1)
+				else if(newCards[0].rank == cards[cards.Count -1].rank + 1)
 				{
 					result = true;
 				}
@@ -42,6 +41,14 @@ public class AcePile : Placeholder {
 	override public void AddCards(List<Card> list)
 	{
 		base.AddCards(list);
+		int pts = 0;
+		//add points from coins
+		AnimateMoveCards();
+		foreach(var card in list)
+		{
+			pts += card.coinStash.coins.Count;
+		}
+		ScoreBoard.AddPoints(pts);
 	}
 	override public void Clicked(MouseEvent evt)	
 	{
@@ -50,9 +57,9 @@ public class AcePile : Placeholder {
 			switch(Game.game.state)
 			{
 				case GameState.CardInHand:
-					if(ApplyRules(null, Game.game.cardInHand))
+					if(ApplyRules(cards, Game.game.cardInHand.parentPlaceholder.GetCardAndChildren(Game.game.cardInHand)))
 					{
-						AddCards(Game.game.cardInHand.parentPlaceholder.GetFromToBottom(Game.game.cardInHand));
+						AddCards(Game.game.cardInHand.parentPlaceholder.RemoveCardAndChildren(Game.game.cardInHand));
 						Game.game.cardInHand = null;		
 					}
 					break;
@@ -70,7 +77,7 @@ public class AcePile : Placeholder {
 			case GameState.CardInHand:
 				if(this != Game.game.cardInHand.parentPlaceholder)
 				{					
-					if(ApplyRules(null, Game.game.cardInHand))
+					if(ApplyRules(cards, Game.game.cardInHand.parentPlaceholder.GetCardAndChildren(Game.game.cardInHand)))
 					{
 						AddCards(Game.game.cardInHand.parentPlaceholder.GetFromToBottom(Game.game.cardInHand));
 						Game.game.cardInHand = null;		

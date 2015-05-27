@@ -14,7 +14,7 @@ public class Deck : Placeholder {
 		base.AddCards(list);
 		foreach(var card in list)
 		{
-			if(list.IndexOf (card)!= list.Count -1)
+			if(list.IndexOf (card)== list.Count -1)
 			{
 				card.FlipUp();
 			}
@@ -23,6 +23,7 @@ public class Deck : Placeholder {
 				card.FlipDown();
 			}
 		}
+		AnimateMoveCards();
 	}
 	override public void CheckZodiacSequences(){}
 	// Update is called once per frame
@@ -60,6 +61,10 @@ public class Deck : Placeholder {
 				break;
 		}
 	}
+	override public void FixedUpdate()
+	{
+		base.FixedUpdate();
+	}
 	public List<Card> NextSet(int quantity)
 	{
 		var cardSet = new List<Card>();
@@ -88,6 +93,7 @@ public class Deck : Placeholder {
 	}
 	override public void Clicked(MouseEvent evt)
 	{
+		if(isAnimating) return;
 		base.Clicked (evt);
 		if(evt.button == MouseButton.Left)
 		{

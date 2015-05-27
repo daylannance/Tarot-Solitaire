@@ -6,6 +6,11 @@ public class ArcanaCard : Card {
 	public int ArcanaCardRank;
 	public GUIText descriptionText;
 	public string title;
+
+	override public void Start()
+	{
+		base.Start ();
+	}
 	override public void Clicked(MouseEvent evt)
 	{
 		if(evt.button == MouseButton.Left)

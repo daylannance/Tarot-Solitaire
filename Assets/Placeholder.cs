@@ -18,9 +18,9 @@ public class Placeholder : CustomMouse {
 	public Vector3 offset;
 	public int id;
 	public static int idCounter;
-	protected List<Card> tempQueue = new List<Card>(); //for passing cards between coroutines
+	public List<Card> tempQueue = new List<Card>(); //for passing cards between coroutines
 	protected Queue<string> animations = new Queue<string>();
-	protected bool isAnimating = false;
+	public static bool isAnimating = false;
 
 	
 	override public bool isHighlighted
@@ -71,6 +71,39 @@ public class Placeholder : CustomMouse {
 	public virtual void AddCardAndChildren(Card card)
 	{
 
+	}
+	public List<Card> GetCardAndChildren(Card card)
+	{
+		var index = cards.IndexOf (card);
+		return cards.GetRange(index, cards.Count - index);
+	}
+	public List<Card> GetFaceUpCards()
+	{
+		List<Card> result = new List<Card>();
+		foreach(var card in cards)
+		{
+			if(card.isFacingUp) result.Add(card);
+		}
+		return result;
+	}
+	public bool CheckNumericOrder(List<Card> list, int increment)
+	{
+		Card previousCard = null;
+		bool result = true; //innocent until proven guilty
+		foreach(var card in list)
+		{
+			if(previousCard != null)
+			{
+				if(previousCard.rank != card.rank + increment)
+				{
+					result = false;
+					break;
+				}
+			}
+			previousCard = card;	
+		}
+		
+		return result;	
 	}
 	public virtual void RestoreBehaviour(Behaviour b)
 	{
@@ -151,28 +184,79 @@ public class Placeholder : CustomMouse {
 	{
 		
 	}
-	protected virtual IEnumerator AnimateAddCoins()
+	protected virtual IEnumerator AnimateRemoveCoins()
 	{
+		if(cards.Count == 0) yield return null;
+		//enforces serial execution of animation cue:
+		isAnimating = true; 
+		int quantityToRemove = 0; //more coins the more rapidly the coins are removed
+		List<Card> cardsBeingRemoved = new List<Card>();
+		//find the cards that are being removed, all parents should be changed already:
+		foreach (var card in cards)
+		{
+			if(card.isBeingTransfered)
+			{
+				cardsBeingRemoved.Add (card);	
+			}
+		}
+		//count how many coins we are removing:
+		if(cardsBeingRemoved.Count > 0)
+		{
+			foreach(var card in cardsBeingRemoved)
+			{	
+				quantityToRemove += card.coinStash.coins.Count;
+			}
+		}
+		if(quantityToRemove > 0)
+		{
+			//the more coins, the less the delay
+			float delay = 1f/quantityToRemove; 
+			//using for loop because I get a 'modified while iterating' error when I use a foreach
+			for(int i=0; i<cardsBeingRemoved.Count; i++)
+			{
+				//keep removing coins from card until count is zero
+				while(cardsBeingRemoved[i].coinStash.coins.Count > 0)
+				{
+					cardsBeingRemoved[i].coinStash.RemoveCoin();
+					//yield return new WaitForSeconds(delay);	
+				}
+			}
+		}
+		//allow next animation to execute:
+		isAnimating = false;
 		yield return null;
 	}
-	public virtual bool ApplyRules(Card card, Card newCard)
+	public virtual bool ApplyRules(List<Card> faceupCards, List<Card> newCards)
 	{
 		return false;
 	}
-	//Problem: Zodiac is being checked to see if a card should be added
-	//and then also to see if the sequence has changed, and possibly a 
-	//third time to see if coins need to be added or taken away.
-	//There has to be a simpler way to apply rules.
+	
 	public virtual void AddCards(List<Card> list)
-	{			
+	{	
+		//if we are dealing, we put each card in its own list
+		//we don't want to animate until all cards are added.
+		//so we want to keep adding to tempQueue instead of 
+		//clearing it.
+		if(Game.game.state != GameState.Dealing)
+		{
+			tempQueue.Clear ();
+		}
+		//so we know what cards were added so we can later animate them:
+		tempQueue.Concat(list);
 		UndoManager.manager.haveAnyCardsMoved = true;
 		Placeholder previousParent = null;
 		if(list.Count > 0)
 		{
 			previousParent = list[0].parentPlaceholder;
 		}
+		foreach(var card in cards)
+		{
+			card.isBeingTransfered = false;
+		}
 		foreach(var card in list)
 		{
+			card.isBeingTransfered = true;
+			//card.isAnimating = true;
 			Parent (card);
 			SetCardTransformPosition(card);
 		}
@@ -181,42 +265,24 @@ public class Placeholder : CustomMouse {
 		{
 			//previousParent.CheckZodiacSequences();
 		}
-		switch(Game.game.state)
-		{
-			case GameState.Dealing:
-				break;
-		}
-		AnimateMoveCards ();
-		animations.Enqueue("AnimateAddCoins");
+		
+	}
+	protected virtual IEnumerator AnimateAddCoins()
+	{
+		yield return null;
 	}
 	public void AnimateMoveCards()
 	{
-		tempQueue.Clear();
-		foreach(var card in cards)
-		{
-			//queue the cards for the animations
-			tempQueue.Add (card);
-		}
-		switch(Game.game.state)
-		{
-		case GameState.Dealing:
-			foreach(var card in tempQueue)
-			{
-				card.transform.parent.localPosition = card.targetPosition;
-			}
-			break;
-		default:
-			animations.Enqueue("AnimateCardsUpAndOver");
-			animations.Enqueue("AnimateCardsDown");
-			break;
-		}	
+		animations.Enqueue("AnimateCardsUpAndOver");
+		animations.Enqueue("AnimateCardsDown");		
 	}
 	public void Parent(Card card)
 	{
 		if(card.parentPlaceholder != null)
 		{
+			card.previousParentPlaceholder = card.parentPlaceholder;
 			card.RemoveSelfFromParent();
-			card.GetComponent<Renderer>().sortingLayerID = this.GetComponent<Renderer>().sortingLayerID;
+			card.renderer.sortingLayerID = this.GetComponent<Renderer>().sortingLayerID;
 		}
 		cards.Add (card);
 		card.parentPlaceholder = this;
@@ -225,17 +291,17 @@ public class Placeholder : CustomMouse {
 	{
 		if(cards.Count == 1)
 		{
-			card.transform.parent.parent = cardsRootTransform;
+			card.transform.parent = cardsRootTransform;
 			//card.transform.parent.localPosition = Vector3.zero;
-			card.targetPosition = Vector3.zero;
+			card.targetPosition = card.transform.parent.position;
 		}
 		else 
 		{
-			card.transform.parent.parent = cardsRootTransform;
+			card.transform.parent = cardsRootTransform;
 			//card.transform.parent.localPosition = offset * (cards.Count-1);
-			card.targetPosition = offset * (cards.Count-1);
+			card.targetPosition = cardsRootTransform.position + offset * cards.IndexOf(card);
 		}
-		card.transform.parent.rotation = Quaternion.AngleAxis (cardAngle, new Vector3(1,0,0));
+		card.transform.rotation = Quaternion.AngleAxis (cardAngle, new Vector3(1,0,0));
 	}
 	IEnumerator AnimateCardsUpAndOver()
 	{
@@ -244,14 +310,14 @@ public class Placeholder : CustomMouse {
 		tempQueue.Reverse ();
 		foreach(var card in tempQueue)
 		{
-			if((card.targetPosition - card.transform.parent.localPosition).magnitude < .01f) continue;
+			if((card.targetPosition - card.transform.position).magnitude < .01f) continue;
 			var pos = card.targetPosition;
-			pos.z += animateHeight;
-			card.StartCoroutine(card.AnimateMove (pos, .1f));
+			pos.y += animateHeight;
+			card.destinations.Add (pos,.01f,.01f);//StartCoroutine(card.AnimateMove (pos, .01f));
 			card.FlipUp ();
 			yield return new WaitForSeconds(.1f);
 		}
-		yield return new WaitForSeconds(.3f);
+		//yield return new WaitForSeconds(.3f);
 		isAnimating = false;
 	}
 	IEnumerator AnimateCardsDown()
@@ -260,9 +326,9 @@ public class Placeholder : CustomMouse {
 		tempQueue.Reverse ();
 		foreach(var card in tempQueue)
 		{
-			if((card.targetPosition - card.transform.parent.localPosition).magnitude < .01f) continue;
-			yield return card.StartCoroutine(card.AnimateMove (card.targetPosition, .1f));
-			yield return new WaitForSeconds(.1f);
+			if((card.targetPosition - card.transform.position).magnitude < .01f) continue;
+			card.destinations.Add(card.targetPosition,.01f,.01f);//StartCoroutine(card.AnimateMove (card.targetPosition, .01f));
+			yield return new WaitForSeconds(.01f);
 		}
 		isAnimating = false;
 	}
@@ -287,6 +353,7 @@ public class Placeholder : CustomMouse {
 	}
 	override public void Clicked(MouseEvent evt)
 	{
+		if(isAnimating) return;
 		base.Clicked (evt);
 	}
 	public virtual bool ReverseCards(Card card, out List<Card> reversedCards)

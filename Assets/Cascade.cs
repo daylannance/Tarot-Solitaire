@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-
+using System.Linq;
 public class Cascade : Placeholder {
 	public enum State { Frozen, NotFrozen, Sorting};
 	public State state = State.NotFrozen;
@@ -28,22 +28,38 @@ public class Cascade : Placeholder {
 	}
 	override public void CardClickedWithCardInHand(Card card, Card cardInHand)
 	{
-		if(card == cards[cards.Count -1] )
+		if(card == Game.game.cardInHand)
 		{
-			if( ApplyRules(card, Game.game.cardInHand))
+			Game.game.cardInHand = null;
+		}
+		else if(card == cards[cards.Count -1] && cardInHand.parentPlaceholder != this)
+		{
+			List<Card> newCards = cardInHand.parentPlaceholder.GetCardAndChildren(Game.game.cardInHand);
+			List<Card> faceupCards = GetFaceupCards ();
+			//apply or ignore the rules
+			
+			if( ApplyRules(faceupCards, newCards) || Game.game.bypassRules)
 			{
-				AddCards(Game.game.cardInHand.parentPlaceholder.RemoveCardAndChildren(Game.game.cardInHand));			
+				AddCards(Game.game.cardInHand.parentPlaceholder.RemoveCardAndChildren(Game.game.cardInHand));	
+				animations.Enqueue("AnimateMoveCards");		
 				Game.game.cardInHand = null;
 			}
-			else
-			{
+			else {
 				Game.game.cardInHand = card;
 			}
 		}
+		else
+		{
+			Game.game.cardInHand = card;
+		}
+		
 	}
 	
-	public override bool ApplyRules(Card card, Card newCard )
+	public override bool ApplyRules(List<Card> faceUpCards,List<Card> newCards )
 	{
+		if(Game.game.bypassRules) return true;
+		//Any card can go on a facedown card:
+		if(faceUpCards.Count ==0) return true;
 		bool result = false;
 		int targetRankDiff = -1;
 		int targetZodiacDiff = 1;
@@ -59,22 +75,46 @@ public class Cascade : Placeholder {
 				targetRankDiff = 1;
 				break;
 		}
-		
-		if(newCard.rank == card.rank + targetRankDiff)  result = true;
-		if(!card.isFacingUp) result = true;
-		//temporarily commented out to test coin mechanisms
-		if(true)//newCard.zodiac == card.zodiac + targetZodiacDiff) 
+		int[] poles = new int[]{1,-1};
+		foreach(var diff in poles)
 		{
-			result = true;
-			card.isInZodiacSequence = true;
-			newCard.isInZodiacSequence = true;
-		}	
+			//cannot do descending order if there is only one card, except if behaviour is reverse
+			//number or reverse all:	
+			if(
+				(diff == -1 && faceUpCards.Count == 1)&&
+				(
+					faceUpCards[0].parentPlaceholder.behaviour != Behaviour.ReverseNumbers
+					|| faceUpCards[0].parentPlaceholder.behaviour != Behaviour.ReverseAll
+				)
+			) break;
+ 			
+			if(CheckNumericOrder(faceUpCards, diff))
+			{
+				if(CheckNumericOrder(newCards, diff))
+				{
+					List<Card> lastAndFirstCard = new List<Card>();
+					lastAndFirstCard.Add((Card)faceUpCards.Last ());
+					lastAndFirstCard.Add ((Card)newCards.First());
+					if(CheckNumericOrder (lastAndFirstCard, diff))
+					{
+						result = true;
+					}
+				}
+			}
+		}
+		//if(newCard.zodiac == card.zodiac + targetZodiacDiff) 
+		//{
+		//	result = true;
+		//	card.isInZodiacSequence = true;
+		//	newCard.isInZodiacSequence = true;
+		//}	
 		return result;
 	}
 	
 	
 	override public void Clicked(MouseEvent evt)
 	{
+		if(isAnimating) return;
 		if(evt.button == MouseButton.Left)
 		{
 			switch(Game.game.state)
@@ -83,6 +123,8 @@ public class Cascade : Placeholder {
 					if(cards.Count == 0)
 					{
 						AddCards(Game.game.cardInHand.parentPlaceholder.RemoveCardAndChildren(Game.game.cardInHand));
+						animations.Enqueue("AnimateMoveCards");
+						Game.game.cardInHand = null;
 					}
 					break;
 			}
@@ -103,19 +145,12 @@ public class Cascade : Placeholder {
 				else if(card == cards[card.parentPlaceholder.cards.Count-1])
 				{
 					card.FlipUp();
-					Game.game.cardInHand = null;
+					Game.game.cardInHand = card;
 				}
 				break;
 			case GameState.CardInHand:
-				if(Game.game.cardInHand == null) throw new UnityException("State is 'Card in Hand' but cardInHand is null!");
-				if(this != Game.game.cardInHand.parentPlaceholder)
-				{					
-					CardClickedWithCardInHand(card, Game.game.cardInHand);
-				}	
-				if(Game.game.cardInHand != null)
-				{
-					Game.game.cardInHand = card;
-				}
+				if(Game.game.cardInHand == null) throw new UnityException("State is 'Card in Hand' but cardInHand is null!");	
+				CardClickedWithCardInHand(card, Game.game.cardInHand);	
 				break;
 			case GameState.SpecialCardInHand:
 				CursorControl.cursor.specialCard.Apply (card);
@@ -143,7 +178,8 @@ public class Cascade : Placeholder {
 			if(card.Previous() != null && card.Previous().isFacingUp)
 			{
 				//I did this elsewhere too (this code should only happen once), just testing the coin mechanism
-				if(true)//card.zodiac == card.Previous().zodiac + targetDiff)
+				//**Not sure if this code is being used!
+				if(card.zodiac == card.Previous().zodiac + targetDiff)
 				{
 					card.Previous().isInZodiacSequence = true;
 					card.Previous ().coinStash.targetCount = consecutiveCount;
@@ -171,26 +207,33 @@ public class Cascade : Placeholder {
 	}
 	override protected IEnumerator AnimateAddCoins()
 	{
-		CheckZodiacSequences();
-		isAnimating = true;
-		int quantityToAdd = 0;
-		foreach(var card in cards)
+		if(cards.Count > 0)
 		{
-			quantityToAdd += card.coinStash.targetCount - card.coinStash.coins.Count;
-		}
-		float delay = 1f/quantityToAdd;
-		//modified while iterating error when I used a foreach
-		for(int i=0; i<cards.Count; i++)
-		{
-			while(cards[i].coinStash.targetCount > cards[i].coinStash.coins.Count)
+			CheckZodiacSequences();
+			isAnimating = true;
+			int quantityToAdd = 0;
+			foreach(var card in cards)
 			{
-				cards[i].coinStash.AddCoin();
-				yield return new WaitForSeconds(delay);	
+				quantityToAdd += card.coinStash.targetCount - card.coinStash.coins.Count;
 			}
+			if(quantityToAdd != 0)
+			{
+				float delay = 1f/quantityToAdd;
+				//modified while iterating error when I used a foreach
+				for(int i=0; i<cards.Count; i++)
+				{
+					while(cards[i].coinStash.targetCount > cards[i].coinStash.coins.Count)
+					{
+						cards[i].coinStash.AddCoin();
+						yield return new WaitForSeconds(delay);	
+					}
+				}
+			}
+			isAnimating = false;
 		}
-		isAnimating = false;
 		yield return null;
 	}
+	
 	public bool ReverseCards(Card card, bool reverseRules = false, List<Card> reversedCards = null)
 	{
 		bool reversedAlready = behaviour != Behaviour.ReverseAll? true:false;

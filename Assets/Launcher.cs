@@ -39,6 +39,6 @@ public class Launcher : MonoBehaviour {
 	}
 	void FixedUpdate()
 	{
-		transform.parent.Rotate (new Vector3(0,0,1),1);
+		transform.Rotate (new Vector3(0,0,1),1);
 	}
 }

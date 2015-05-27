@@ -40,16 +40,23 @@ public class Hand : Placeholder {
 		base.AddCards(cards);
 		foreach(var card in cards)
 		{
-			card.GetComponent<Renderer>().sortingLayerID = LayerMask.GetMask (new string[]{"Cards, CardsInHand"});
+			card.GetComponentInChildren<Renderer>().sortingLayerID = LayerMask.GetMask (new string[]{"Cards, CardsInHand"});
 		}
+		AnimateMoveCards();
 	}
 	public void RotateSet(List<Card> set )
 	{
+		foreach(var card in set)
+		{
+			//card.StopAllCoroutines();
+			
+		}
 		var tempCards = new List<Card>();
 		
 		if(cards.Count > 0)
 		{
-			tempCards.AddRange (cards.GetRange(0,cards.Count));			
+			tempCards.AddRange (cards.GetRange(0,cards.Count));
+			cards.Clear();		
 			discard.AddCards(tempCards);
 		}
 		AddCards (set);
@@ -63,15 +70,15 @@ public class Hand : Placeholder {
 		card.FlipUp();
 		try
 		{
-			card.transform.parent.SetParent (cardTransforms[cards.Count]);
+			card.transform.SetParent (cardTransforms[cards.Count]);
 		}
 		catch(System.ArgumentOutOfRangeException e)
 		{
 			Debug.Log ("*+*+*+Caught an index out of range exception while clicking. Attempting to Undo");
 			UndoManager.manager.Undo();
 		}
-		card.transform.parent.localPosition = Vector3.zero;
-		card.transform.parent.localRotation = new Quaternion(0,0,0,0);
+		card.transform.GetChild(0).position = Vector3.zero;
+		card.transform.GetChild (0).localRotation = new Quaternion(0,0,0,0);
 		
 		//base.SetCardTransformPosition(card);
 		//card.FlipUp();

@@ -100,11 +100,16 @@ public class PlaceholderManager : MonoBehaviour {
 		{
 			for(int j = 6; j >= i; j--)
 			{
-				if(j==i) deck.cards[deck.cards.Count -1].FlipUp();
-				else deck.cards[deck.cards.Count -1].FlipDown();
-				cascades[j].AddCards(new List<Card>{deck.cards[deck.cards.Count -1]});
+				var card = deck.cards[deck.cards.Count -1];
+				if(j==i) card.FlipUp();
+				else card.FlipDown();
+				cascades[j].AddCards(new List<Card>{card});
 				yield return new WaitForSeconds(0.1f);			
 			}
+		}
+		foreach(var cascade in cascades)
+		{
+			cascade.AnimateMoveCards();
 		}
 		foreach(var arcana in arcanas)
 		{
