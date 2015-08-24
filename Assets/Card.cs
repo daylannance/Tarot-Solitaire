@@ -4,6 +4,7 @@ using System.Linq;
 using System;
 using System.Collections;
 
+public enum AnimationMode{ AscendingChain, DescendingChain, ConstantSpeed}
 public enum CardStatus { UpsideDown, NotUpsideDown}
 public struct MaterialInfo
 {
@@ -37,6 +38,7 @@ public class Card : CustomMouse {
 	public bool isBeingTransfered = false;
 	public bool isAnimating = false;
 	public Renderer renderer;
+	public Card parentCard, childCard;
 	[HideInInspector]
 	protected ClickDetector clickDetector;
 	
@@ -66,7 +68,6 @@ public class Card : CustomMouse {
 		GetComponent<Renderer>().materials[materialColors["Picture"].index].color = color * 1.5f;
 		isHighlighted = true;
 	}
-	[HideInInspector]
 	public Destinations destinations;
 	public bool isGlowing = false;
 	public bool isFacingUp = false;
@@ -123,7 +124,7 @@ public class Card : CustomMouse {
 			DefineInitialColors();
 		}
 		isInZodiacSequence = false;
-		destinations = new Destinations(transform);
+		destinations = new Destinations(transform,this);
 	}
 	// Use this for initialization
 	public virtual void Start () {

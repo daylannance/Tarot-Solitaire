@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 public delegate void AddCardDelegate(Card card);
+public delegate IEnumerator CoroutineWithArgs(Dictionary<string,object> parameters);
 public enum Behaviour { Normal, ReverseAll, ReverseNumbers, ReverseZodiac, Stone }
 
 public class Placeholder : CustomMouse {
@@ -18,8 +19,8 @@ public class Placeholder : CustomMouse {
 	public Vector3 offset;
 	public int id;
 	public static int idCounter;
-	public List<Card> tempQueue = new List<Card>(); //for passing cards between coroutines
-	protected Queue<string> animations = new Queue<string>();
+	public List<Card> tempList = new List<Card>(); //for passing cards between coroutines
+	protected Queue<CoroutineArgs> animations = new Queue<CoroutineArgs>();
 	public static bool isAnimating = false;
 
 	
@@ -57,8 +58,8 @@ public class Placeholder : CustomMouse {
 	{
 		if(!isAnimating && animations.Count > 0)
 		{
-			var routineName = animations.Dequeue();
-			StartCoroutine (routineName);
+			var routine = animations.Dequeue();
+			StartCoroutine (routine.routineDelegate(routine.parameters));
 		}
 	}
 	override public void UnHighlight()
@@ -235,14 +236,17 @@ public class Placeholder : CustomMouse {
 	{	
 		//if we are dealing, we put each card in its own list
 		//we don't want to animate until all cards are added.
-		//so we want to keep adding to tempQueue instead of 
+		//so we want to keep adding to tempList instead of 
 		//clearing it.
 		if(Game.game.state != GameState.Dealing)
 		{
-			tempQueue.Clear ();
+			tempList.Clear ();
 		}
 		//so we know what cards were added so we can later animate them:
-		tempQueue.Concat(list);
+		foreach(var card in list)
+		{
+			tempList.Add(card);
+		}
 		UndoManager.manager.haveAnyCardsMoved = true;
 		Placeholder previousParent = null;
 		if(list.Count > 0)
@@ -267,14 +271,30 @@ public class Placeholder : CustomMouse {
 		}
 		
 	}
-	protected virtual IEnumerator AnimateAddCoins()
+	protected virtual IEnumerator AnimateAddCoins(Dictionary<string,object> parameters)
 	{
 		yield return null;
 	}
 	public void AnimateMoveCards()
 	{
-		animations.Enqueue("AnimateCardsUpAndOver");
-		animations.Enqueue("AnimateCardsDown");		
+		Dictionary<string,object> upParameters = new Dictionary<string,object>();
+		upParameters.Add("reverse",true);
+		Dictionary<string,object> downParameters = new Dictionary<string,object>();
+		downParameters.Add("reverse",true);
+		animations.Enqueue(new CoroutineArgs(AnimateCardsUpAndOver, upParameters));
+		animations.Enqueue(new CoroutineArgs(AnimateCardsDown, downParameters));		
+	}
+	//
+	public void AnimateChainTopToBottom()
+	{
+		if(tempList.Count > 0)
+		{
+			var top = tempList[0];
+		}
+		foreach(var card in tempList)
+		{
+
+		}
 	}
 	public void Parent(Card card)
 	{
@@ -303,34 +323,60 @@ public class Placeholder : CustomMouse {
 		}
 		card.transform.rotation = Quaternion.AngleAxis (cardAngle, new Vector3(1,0,0));
 	}
-	IEnumerator AnimateCardsUpAndOver()
+	public IEnumerator AnimateCardsUpAndOver(Dictionary<string,object> parameters)
 	{
 		isAnimating = true;
-		float animateHeight =(cards.Count > 0)? cards[0].width * 2: 1f;
-		tempQueue.Reverse ();
-		foreach(var card in tempQueue)
+		float animateHeight = 4;//(cards.Count > 0)? cards[0].width * 2: 1f;
+		if((bool)parameters["reverse"])tempList.Reverse ();
+		if(tempList.Count > 0)
 		{
-			if((card.targetPosition - card.transform.position).magnitude < .01f) continue;
-			var pos = card.targetPosition;
-			pos.y += animateHeight;
-			card.destinations.Add (pos,.01f,.01f);//StartCoroutine(card.AnimateMove (pos, .01f));
-			card.FlipUp ();
-			yield return new WaitForSeconds(.1f);
+			for(int i = 0; i < tempList.Count; i++)
+			{
+				Card card = tempList[i];
+				if((card.targetPosition - card.transform.position).magnitude < .01f) continue;
+				var pos = card.targetPosition;
+				pos.y += animateHeight;
+				card.destinations.Add (pos,4,.01f,AnimationMode.ConstantSpeed);//StartCoroutine(card.AnimateMove (pos, .01f));
+				//card.FlipUp ();
+				yield return new WaitForSeconds(.01f);
+			}
 		}
 		//yield return new WaitForSeconds(.3f);
 		isAnimating = false;
 	}
-	IEnumerator AnimateCardsDown()
-	{
+	public IEnumerator AnimateCardsDown(Dictionary<string,object> parameters)
+	{	
 		isAnimating = true;
-		tempQueue.Reverse ();
-		foreach(var card in tempQueue)
+		//depending on how cards are arranged, reverse
+		//can keep the cards from going through eachother
+	    //while animating
+		if((bool)parameters["reverse"])
 		{
+			tempList.Reverse();
+		}
+		for(int i =0; i< tempList.Count; i++)
+		{
+			var card = tempList[i];
 			if((card.targetPosition - card.transform.position).magnitude < .01f) continue;
-			card.destinations.Add(card.targetPosition,.01f,.01f);//StartCoroutine(card.AnimateMove (card.targetPosition, .01f));
-			yield return new WaitForSeconds(.01f);
+			card.destinations.Add(card.targetPosition,4,.01f,AnimationMode.ConstantSpeed);
+			yield return new WaitForSeconds(.1f);
 		}
 		isAnimating = false;
+	}
+	public void SetParentingTopToBottom(List<Card> list)
+	{
+		//this is all so the cards can follow eachother in a chain.
+		for(int i = 0; i < list.Count; i++)
+		{
+			//if there is a card after index;
+			if(i+1 < list.Count)
+			{
+				var parent = list[i];
+				var child = list[i+1];
+				parent.childCard = child;
+				child.parentCard = parent;
+			}
+		}
 	}
 	public virtual void RepositionCards()
 	{

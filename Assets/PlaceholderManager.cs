@@ -100,16 +100,20 @@ public class PlaceholderManager : MonoBehaviour {
 		{
 			for(int j = 6; j >= i; j--)
 			{
-				var card = deck.cards[deck.cards.Count -1];
-				if(j==i) card.FlipUp();
-				else card.FlipDown();
+				var card = deck.cards[deck.cards.Count -1];	
 				cascades[j].AddCards(new List<Card>{card});
-				yield return new WaitForSeconds(0.1f);			
+				yield return new WaitForSeconds(0.1f);
+				if(j==i) card.FlipUp();
+				else card.FlipDown();			
 			}
 		}
-		foreach(var cascade in cascades)
+		//normally it is done after each time "AddCards" is called
+		//but the cards go up and down repeatedly if you do that
+		//while dealing. So we call it after all "AddCards" method calls
+		//have been completed.
+		foreach(var c in cascades)
 		{
-			cascade.AnimateMoveCards();
+			c.AnimateDealCards();
 		}
 		foreach(var arcana in arcanas)
 		{

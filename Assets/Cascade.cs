@@ -22,9 +22,20 @@ public class Cascade : Placeholder {
 	{
 		arrows.ReverseArrows();
 	}
+	override public void FixedUpdate()
+	{
+		base.FixedUpdate ();
+	}
+	public void AnimateDealCards()
+	{
+		Dictionary<string,object> parameters = new Dictionary<string,object>();
+		parameters.Add("reverse",false);
+		animations.Enqueue(new CoroutineArgs(AnimateCardsDown, parameters));
+	}
 	override public void AddCards(List<Card> cardList)
 	{
 		base.AddCards(cardList);
+		if(Game.game.state != GameState.Dealing)AnimateMoveCards();
 	}
 	override public void CardClickedWithCardInHand(Card card, Card cardInHand)
 	{
@@ -41,7 +52,6 @@ public class Cascade : Placeholder {
 			if( ApplyRules(faceupCards, newCards) || Game.game.bypassRules)
 			{
 				AddCards(Game.game.cardInHand.parentPlaceholder.RemoveCardAndChildren(Game.game.cardInHand));	
-				animations.Enqueue("AnimateMoveCards");		
 				Game.game.cardInHand = null;
 			}
 			else {
@@ -114,7 +124,6 @@ public class Cascade : Placeholder {
 	
 	override public void Clicked(MouseEvent evt)
 	{
-		if(isAnimating) return;
 		if(evt.button == MouseButton.Left)
 		{
 			switch(Game.game.state)
@@ -123,10 +132,14 @@ public class Cascade : Placeholder {
 					if(cards.Count == 0)
 					{
 						AddCards(Game.game.cardInHand.parentPlaceholder.RemoveCardAndChildren(Game.game.cardInHand));
-						animations.Enqueue("AnimateMoveCards");
 						Game.game.cardInHand = null;
 					}
-					break;
+					else if(ApplyRules(GetFaceupCards(),Game.game.cardInHand.parentPlaceholder.RemoveCardAndChildren(Game.game.cardInHand)))
+					{
+						AddCards(Game.game.cardInHand.parentPlaceholder.RemoveCardAndChildren(Game.game.cardInHand));
+					    Game.game.cardInHand = null;				
+					}
+				break;
 			}
 		}
 	}
@@ -203,9 +216,9 @@ public class Cascade : Placeholder {
 	override protected void UpdateCoins()
 	{
 		CheckZodiacSequences();
-		animations.Enqueue("AnimateAddCoins");
+		animations.Enqueue(new CoroutineArgs(AnimateAddCoins, new Dictionary<string,object>()));
 	}
-	override protected IEnumerator AnimateAddCoins()
+	override protected IEnumerator AnimateAddCoins(Dictionary<string,object> parameters)
 	{
 		if(cards.Count > 0)
 		{

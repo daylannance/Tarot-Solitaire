@@ -1,17 +1,19 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-
+[System.Serializable]
 public class Destinations
 {
 	public Transform thingMoving;
- 	Queue<Destination> list = new Queue<Destination>();
+ 	public Queue<Destination> list = new Queue<Destination>();
 	public Destination current;
-	public Destinations(Transform thingMoving)
+	Card card;
+	public Destinations(Transform thingMoving, Card card)
 	{
 		this.thingMoving = thingMoving;
+		this.card = card;
 	}
-	public int Count {
+	public int count {
 		get{ return list.Count;}
 	}
 	public void Next()
@@ -19,16 +21,16 @@ public class Destinations
 		if(list.Count > 0) 
 		{
 			current = list.Dequeue();
-			current.Initialize ();
 		}	
+		else current = null;
 	}
-	public void Add(Vector3 coords, float speed, float delay)
+	public void Add(Vector3 coords, float speed, float delay, AnimationMode mode)
 	{
-		list.Enqueue(new Destination(thingMoving, this, coords,speed,delay));
+		list.Enqueue(new Destination(thingMoving, this, coords,speed,delay,mode,card));
 	}
 	public void Update()
 	{
-		if(current == null && Count > 0)
+		if(current == null && count > 0)
 		{
 			Next ();
 		}

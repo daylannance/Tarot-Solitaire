@@ -11,42 +11,71 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+[System.Serializable]
 public class Destination
 {
+	[System.NonSerialized]
 	Destinations queue;		
 	Transform thingMoving;
 	public Vector3 coords;
 	public float speed;
 	public float pauseTime;
-	Vector3 step;
-	int steps;
-	int i;
-	public Destination (Transform thingMoving, Destinations queue, Vector3 coords, float speed, float pauseTime)
+	public AnimationMode mode;
+	Card card;
+
+	public Destination (Transform thingMoving, Destinations queue, Vector3 coords, float speed, float pauseTime, AnimationMode mode, Card card)
 	{
 		this.thingMoving = thingMoving;
 		this.queue = queue;
 		this.coords = coords;
 		this.speed = speed;
+		this.mode = mode;
 		this.pauseTime = pauseTime;
 	}
-	public void Initialize()
-	{
-		Vector3 diff = coords - thingMoving.position;
-		step = diff * Time.fixedDeltaTime;
-		int steps = (int)(diff.magnitude/step.magnitude);
-	}
+	
 	public void Move()
 	{
-		if(i < steps)
+		//coords is the absolute destination even if moving with a chain
+		Vector3 diff = coords - thingMoving.position;
+		
+		switch(mode)
 		{
-			i++;
-			thingMoving.position += step;
-		}
-		else
-		{
-			thingMoving.position = coords;
-			queue.Next ();
+			//own course:
+			case AnimationMode.ConstantSpeed:
+				//wether it has passed the target or is approaching the target
+				//the distance will be less than or equal to speed at some point
+				//and that is where the thing moving should snap into place
+				//and move on to the next destination			
+				if(diff.magnitude >= .3f)
+				{
+					thingMoving.position += diff/speed;
+				}
+				else {
+					thingMoving.position = coords;
+					queue.Next();
+				}
+				break;
+			//follow parent
+			case AnimationMode.DescendingChain:
+				if(diff.magnitude > .2f)//distance relative to ultimate position
+				{
+					if(card.parentCard)//follow parent
+					{
+						var targetToFollow = card.parentCard.transform.position;
+						//distance relative to parent:
+						diff = (targetToFollow - thingMoving.position)/speed;
+						thingMoving.position += diff;
+					}
+				}
+				else 
+				{
+					thingMoving.position = coords;
+					queue.Next ();
+				}
+				break;
+			//follow child
+			case AnimationMode.AscendingChain:
+				break;
 		}
 	}
 }
